@@ -1,37 +1,57 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ChefThread extends Thread implements Chef, Runnable {
     private Ingredient infinite;
-    private List<Ingredient> ingredientList;
-
-    public ChefThread () {
-        infinite = null;
-        ingredientList = new ArrayList();
+    private AgentThread agent;
+    private int performance;
+    public ChefThread(AgentThread agentThread) {
+        agent = agentThread;
+        performance = 0;
     }
 
     @Override
     public void run() {
-        while (true) {
-            try {
-                Sandwich sandwich = make();
-                eat(sandwich);
-                this.notify();
-            } catch (NotEnoughIngredientsException e) {
-                System.out.println(String.format("ChefThread[%s] cannot make sandwich", this.getId()));
+        while (!agent.isFinished()) {
+            synchronized (agent) {
+                try {
+                    Sandwich sandwich = make();
+                    System.out.println(String.format("[progress] Chef %s made sandwich", getId()));
+                    eat(sandwich);
+                    agent.cleanTable();
+                    agent.reportProgress();
+                    performance++;
+                    // System.out.println(String.format("ChefThread[%s] made sandwich", this.getId()));
+                } catch (NotEnoughIngredientsException e) {
+                    // notify in the case that they aren't able to make a sandwich
+                    agent.notifyAll();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
-
         }
     }
 
     @Override
     public synchronized Sandwich make() throws NotEnoughIngredientsException {
-        return new Sandwich(ingredientList);
+        if (agent.isTableClean()) {
+            throw new NotEnoughIngredientsException();
+        }
+        List<Ingredient> availableIngredients = new ArrayList(agent.getTable());
+        availableIngredients.add(getInfinite());
+
+        return new Sandwich(availableIngredients);
     }
 
     @Override
-    public void eat(Sandwich sandwich) {
-
+    public void eat(Sandwich sandwich) throws InterruptedException {
+        System.out.println(String.format("[progress] Chef %s eating sandwich (150ms)", getId()));
+        List<Ingredient> availableIngredients = new ArrayList(agent.getTable());
+        availableIngredients.add(getInfinite());
+        System.out.println(String.format("[progress] availableIngredients: %s", availableIngredients.toString()));
+        sleep(150);
+        agent.notifyAll();
     }
 
     public Ingredient getInfinite() {
@@ -42,11 +62,15 @@ public class ChefThread extends Thread implements Chef, Runnable {
         this.infinite = infinite;
     }
 
-    public List<Ingredient> getIngredientList() {
-        return ingredientList;
+    public AgentThread getAgent() {
+        return agent;
     }
 
-    public void setIngredientList(List<Ingredient> ingredientList) {
-        this.ingredientList = ingredientList;
+    public void setAgent(AgentThread agent) {
+        this.agent = agent;
+    }
+
+    public int getPerformance() {
+        return performance;
     }
 }
