@@ -9,14 +9,13 @@ public class AgentThread extends Thread implements Runnable {
     private List<ChefThread> chefThreadList;
     private int sandwichCount;
     private int maxSandwiches;
-    private boolean isTableClean;
 
     public AgentThread () {
         random = new Random();
         sandwichCount = 0;
         maxSandwiches = 20;
         ingredientList = new ArrayList(Arrays.asList(new Bread(), new Jam(), new PeanutButter()));
-        isTableClean = true;
+        cleanTable();
 
         chefThreadList = new ArrayList(ingredientList.stream().map(ingredient -> {
             ChefThread instance = new ChefThread(this);
@@ -31,7 +30,6 @@ public class AgentThread extends Thread implements Runnable {
         while (true) { // continue until all sandwiches have been produced
             List<Ingredient> clone = ingredientList.stream().collect(Collectors.toList());
             table = new ArrayList(Arrays.asList(grab(clone), grab(clone)));
-            isTableClean = false;
             synchronized (this) {
                 try {
                     this.wait(); // if state is not ready, voluntarily give up lock
@@ -56,7 +54,6 @@ public class AgentThread extends Thread implements Runnable {
     }
 
     public void cleanTable() {
-        isTableClean = true;
         table = new ArrayList();
     }
 
@@ -73,6 +70,6 @@ public class AgentThread extends Thread implements Runnable {
     }
 
     public synchronized boolean isTableClean() {
-        return isTableClean;
+        return table.isEmpty();
     }
 }

@@ -69,11 +69,11 @@ public class ChefThread extends Thread implements Chef, Runnable {
 
     @Override
     public void eat(Sandwich sandwich, Function<Void, Void> onComplete) throws InterruptedException {
-        System.out.println(String.format("[progress] Chef %s eating sandwich (150ms)", getId()));
+        System.out.println(String.format("[progress] Chef %s eating sandwich (75ms)", getId()));
         List<Ingredient> availableIngredients = new ArrayList(agent.getTable());
         availableIngredients.add(getInfinite());
         System.out.println(String.format("[progress] availableIngredients: %s", availableIngredients.toString()));
-        sleep(150);
+        sleep(75);
         agent.notifyAll();
         onComplete.apply(null);
     }
