@@ -1,75 +1,68 @@
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class AgentThread extends Thread implements Runnable {
     private Random random;
+    private SharedBuffer<Ingredient> table;
     private List<Ingredient> ingredientList;
-    private List<Ingredient> table;
     private List<ChefThread> chefThreadList;
     private int sandwichCount;
     private int maxSandwiches;
 
-    public AgentThread () {
+    public AgentThread(SharedBuffer<Ingredient> tableBuffer, List<Ingredient> availableIngredients) {
         random = new Random();
         sandwichCount = 0;
         maxSandwiches = 20;
-        ingredientList = new ArrayList(Arrays.asList(new Bread(), new Jam(), new PeanutButter()));
-        cleanTable();
+        table = tableBuffer;
+        chefThreadList = new ArrayList();
+        ingredientList = availableIngredients;
+    }
 
-        chefThreadList = new ArrayList(ingredientList.stream().map(ingredient -> {
-            ChefThread instance = new ChefThread(this);
-            instance.setInfinite(ingredient);
-            return instance;
-        }).collect(Collectors.toList()));
+    public void register (ChefThread t) {
+        t.setAgent(this);
+        chefThreadList.add(t);
     }
 
     @Override
     public void run() {
         chefThreadList.forEach(t -> t.start());
-        while (true) { // continue until all sandwiches have been produced
-            List<Ingredient> clone = ingredientList.stream().collect(Collectors.toList());
-            table = new ArrayList(Arrays.asList(grab(clone), grab(clone)));
-            synchronized (this) {
-                try {
-                    this.wait(); // if state is not ready, voluntarily give up lock
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                this.notifyAll();
-            }
-            if (isFinished()) {
-                // System.out.println("finished");
-                break;
-            }
-        }
+        System.out.println("Past this point");
+        System.out.println(!isFinished());
+        while (!isFinished()) { // continue until all sandwiches have been produced
+            List<Ingredient> clone = new ArrayList<>(ingredientList);
 
-        System.out.println("[done] Total sandwiches made: " + sandwichCount);
+            synchronized (table) {
+                table.fill(Arrays.asList(grab(clone), grab(clone)));
+
+                while (table.isFull()) {
+                    try {
+                        table.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+        }
+        Logger.getInstance().debug("[done] Total sandwiches made: " + sandwichCount);
         chefThreadList.forEach(
-            chef -> System.out.println("[done] Chef " + chef.getId() + " made " + chef.getPerformance() + " sandwiches"));
+            chef -> Logger.getInstance().info("[done] Chef %s made %s sandwiches", chef.getId(), chef.getPerformance()));
     }
 
     private synchronized Ingredient grab (List<Ingredient> c) {
         return c.remove(random.nextInt(c.size()));
     }
 
-    public void cleanTable() {
-        table = new ArrayList();
-    }
-
     public synchronized void reportProgress() {
         sandwichCount++;
     }
 
-    public synchronized boolean isFinished () {
+    public boolean isFinished () {
         return sandwichCount >= maxSandwiches;
     }
 
-    public synchronized List<Ingredient> getTable () {
-        return table;
-    }
 
-    public synchronized boolean isTableClean() {
-        return table.isEmpty();
+    public int getSandwichCount () {
+        return sandwichCount;
     }
 }

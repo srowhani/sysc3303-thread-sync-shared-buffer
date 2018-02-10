@@ -9,11 +9,15 @@ import java.util.List;
  * This error to be handled by chef thread.
  */
 public class Sandwich {
-    public Sandwich (List<Ingredient> ingredientList) throws NotEnoughIngredientsException {
-        List<Class> required = new ArrayList(Arrays.asList(Bread.class, Jam.class, PeanutButter.class));
-        boolean hasAllMaterials = ingredientList.stream().allMatch(item -> required.remove(item.getClass()));
-        if (!hasAllMaterials) {
-            throw new NotEnoughIngredientsException();
-        }
+    List<Ingredient> ingredients;
+    public Sandwich (List<Ingredient> ingredientList) {
+        ingredients = ingredientList;
+    }
+    /**
+     * Print sandwich representation as string
+     */
+    @Override
+    public String toString () {
+        return ingredients.toString();
     }
 }

@@ -23,4 +23,10 @@ been made and consumed.
 
 # Directory Structure
 
+- `src/main/java` - All relevant code
+- `diagrams/*` - contains all diagrams (ucm / collab / uml)
 # Setup Instructions
+
+- Import project into eclipse
+- Right click on `src/main/java/RunAgentThread.java`
+- Click run as dropdown option
